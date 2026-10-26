@@ -1,0 +1,7 @@
+% makeindex style for the book: letter groups set by \indexgroup.
+headings_flag 1
+heading_prefix "\n\\indexgroup{"
+heading_suffix "}\n"
+symhead_positive "Numbers"
+numhead_positive "Numbers"
+delim_r "--"

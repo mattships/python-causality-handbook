@@ -1,0 +1,42 @@
+% Front cover: full bleed, dark ground, the Spartans of the book's banner.
+% The two cover pages are labelled C1 and C2 in the PDF, as printers do.
+\renewcommand*{\thepage}{C\arabic{page}}
+\thispagestyle{empty}
+\begin{tikzpicture}[remember picture, overlay]
+  \coordinate (sw) at (current page.south west);
+  \fill[covernight] (sw) rectangle (current page.north east);
+
+  % The banner photograph, faded into the ground at top and bottom.
+  \node[anchor=south west, inner sep=0pt] (art) at ($(sw)+(0,2.55in)$)
+    {\includegraphics[width=\paperwidth]{img/brave-and-true.png}};
+  \fill[covernight, path fading=north] (art.south west) rectangle ($(art.south east)+(0,0.9in)$);
+  \fill[covernight, path fading=south] ($(art.north west)-(0,0.9in)$) rectangle (art.north east);
+
+  % Title block.
+  % (\parbox rather than TikZ's text width, which squeezes word spaces.)
+  \node[anchor=north west, inner sep=0pt]
+    at ($(sw)+(0.7in,9.25in)$) {\parbox[t]{5.6in}{\raggedright
+      {\headingfont\fontsize{9}{11}\selectfont\addfontfeatures{LetterSpace=28}%
+        \color{covercream!80}MATHEUS FACURE ALVES}\par\vspace{0.42in}%
+      {\headinglightfont\fontsize{50}{54}\selectfont\color{covercream}Causal Inference\par}%
+      \vspace{6pt}%
+      {\headingfont\fontsize{31}{36}\selectfont\color{accent!55!red!90!white}for the Brave and True\par}%
+    }};
+
+  % Subtitle and imprint line.
+  \node[anchor=south west, inner sep=0pt]
+    at ($(sw)+(0.7in,1.25in)$) {\parbox[b]{5.2in}{\raggedright\hyphenpenalty=10000\exhyphenpenalty=10000
+      {\color{accent!55!red!90!white}\rule{2.4em}{2pt}}\par\vspace{14pt}%
+      {\itshape\fontsize{14}{19}\selectfont\color{covercream}A light-hearted yet rigorous approach to
+        learning impact estimation and sensitivity analysis.\par}%
+      \vspace{10pt}%
+      {\headinglightfont\fontsize{10.5}{14}\selectfont\color{covercream!70}All in Python, and with
+        as many memes as I could find.\par}%
+    }};
+  \node[anchor=south west, inner sep=0pt] at ($(sw)+(0.7in,0.55in)$)
+    {\headingfont\fontsize{7.5}{9}\selectfont\addfontfeatures{LetterSpace=30}\color{covercream!55}OPEN-SOURCE EDITION};
+\end{tikzpicture}
+\clearpage
+% Inside front cover.
+\thispagestyle{empty}\null
+\clearpage

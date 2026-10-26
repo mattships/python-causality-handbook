@@ -1,0 +1,27 @@
+# Interpreter packages for figures.py (Python 3.11).  Versions match the
+# era in which most notebooks were last executed (2020-2023).
+numpy==1.24.4
+pandas==1.5.3
+scipy==1.10.1
+matplotlib==3.7.5
+seaborn==0.12.2
+statsmodels==0.13.5
+scikit-learn==1.2.2
+lightgbm==3.3.5
+linearmodels==4.27
+cvxpy==1.3.2
+causalinference==0.1.3
+toolz
+joblib
+graphviz
+setuptools<70        # linearmodels 4.27 still imports pkg_resources
+# notebook execution and the build helpers figures.py imports
+nbclient
+nbformat
+ipykernel
+matplotlib-inline
+pyyaml
+beautifulsoup4
+lxml
+pillow
+pypdf

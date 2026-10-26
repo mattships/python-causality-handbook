@@ -1,0 +1,439 @@
+% brave.sty -- book design for "Causal Inference for the Brave and True"
+%
+% Used with the memoir class and LuaLaTeX.  Trim size 7in x 10in, XCharter
+% for text and maths, Fira Sans for display type and tables, Inconsolata
+% for code.  The accent colour is the red of the Spartan capes on the cover.
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{brave}[2026/10/26 Brave and True book design]
+
+% ---------------------------------------------------------------------------
+% Page geometry
+% ---------------------------------------------------------------------------
+\setstocksize{10in}{7in}
+\settrimmedsize{\stockheight}{\stockwidth}{*}
+\settypeblocksize{8.05in}{5.25in}{*}
+\setlrmargins{0.82in}{*}{*}          % spine margin; the outer one gets the rest
+\setulmargins{0.9in}{*}{*}
+\setheadfoot{13pt}{0.45in}
+\setheaderspaces{*}{0.28in}{*}
+\setmarginnotes{0.15in}{0.7in}{0.1in}
+\checkandfixthelayout[nearest]
+
+% ---------------------------------------------------------------------------
+% Fonts
+% ---------------------------------------------------------------------------
+\RequirePackage{amsmath}
+\RequirePackage{fontspec}
+\RequirePackage[math-style=TeX,bold-style=TeX]{unicode-math}
+
+\setmainfont{XCharter}[
+  Extension      = .otf,
+  UprightFont    = *-Roman,
+  BoldFont       = *-Bold,
+  ItalicFont     = *-Italic,
+  BoldItalicFont = *-BoldItalic,
+  SlantedFont    = *-Slanted,
+  Numbers        = Lining,
+]
+\setsansfont{FiraSans}[
+  Extension      = .otf,
+  UprightFont    = *-Book,
+  BoldFont       = *-SemiBold,
+  ItalicFont     = *-BookItalic,
+  BoldItalicFont = *-SemiBoldItalic,
+  Scale          = MatchLowercase,
+]
+\setmonofont{Inconsolatazi4}[
+  Extension      = .otf,
+  UprightFont    = *-Regular,
+  BoldFont       = *-Bold,
+  Scale          = MatchLowercase,
+]
+\setmathfont{XCharter-Math.otf}
+% Bold maths letters: MathJax's \pmb is bold italic for letters.
+\AtBeginDocument{\renewcommand{\pmb}[1]{\symbfit{#1}}}
+
+\newfontfamily\headingfont{FiraSans}[
+  Extension = .otf, UprightFont = *-SemiBold, BoldFont = *-Bold,
+  ItalicFont = *-SemiBoldItalic, Scale = MatchLowercase]
+\newfontfamily\headinglightfont{FiraSans}[
+  Extension = .otf, UprightFont = *-Light, BoldFont = *-Regular,
+  ItalicFont = *-LightItalic, Scale = MatchLowercase]
+\newfontfamily\headingmediumfont{FiraSans}[
+  Extension = .otf, UprightFont = *-Medium, BoldFont = *-SemiBold,
+  ItalicFont = *-MediumItalic, Scale = MatchLowercase]
+\newfontfamily\tablefont{FiraSans}[
+  Extension = .otf, UprightFont = *-Book, BoldFont = *-Medium,
+  ItalicFont = *-BookItalic, Scale = MatchLowercase,
+  Numbers = {Lining, Monospaced}]
+\newfontfamily\smallcapsheadfont{FiraSans}[
+  Extension = .otf, UprightFont = *-Book, BoldFont = *-SemiBold,
+  Scale = MatchLowercase, Letters = {SmallCaps, UppercaseSmallCaps},
+  LetterSpace = 5]
+
+\linespread{1.1}
+
+\RequirePackage[english]{babel}
+\RequirePackage[protrusion=true,expansion=true,final]{microtype}
+\RequirePackage{xcolor}
+
+% ---------------------------------------------------------------------------
+% Colour
+% ---------------------------------------------------------------------------
+\definecolor{accent}{HTML}{9A1F26}
+\definecolor{accentdark}{HTML}{7A171D}
+\definecolor{ink}{HTML}{1E1B19}
+\definecolor{inkgray}{HTML}{5F5852}
+\definecolor{rulegray}{HTML}{C9C1B8}
+\definecolor{codebg}{HTML}{F6F3EE}
+\definecolor{outrule}{HTML}{D3CBC1}
+\definecolor{covernight}{HTML}{151210}
+\definecolor{covercream}{HTML}{F3EBDD}
+
+% ---------------------------------------------------------------------------
+% Paragraphs, lists, justification
+% ---------------------------------------------------------------------------
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.5\baselineskip plus 2pt minus 1pt}
+\raggedbottom
+\setlength{\emergencystretch}{2em}
+\tolerance=1500
+\widowpenalty=10000
+\clubpenalty=10000
+\brokenpenalty=5000
+
+\RequirePackage{enumitem}
+\setlist{topsep=0.2\baselineskip, partopsep=0pt, itemsep=0.25\baselineskip,
+  parsep=0pt, leftmargin=1.6em}
+\setlist[itemize,1]{label={\color{accent}\small\textbullet}}
+\setlist[itemize,2]{label={\color{inkgray}\textendash}}
+\setlist[enumerate,1]{label={\headingmediumfont\color{accent}\arabic*.}}
+\providecommand{\tightlist}{\setlength{\itemsep}{0.15\baselineskip}\setlength{\parskip}{0pt}}
+
+% ---------------------------------------------------------------------------
+% Packages for content
+% ---------------------------------------------------------------------------
+\RequirePackage{graphicx}
+\RequirePackage{booktabs}
+\RequirePackage{longtable}
+\RequirePackage{array}
+\RequirePackage{calc}
+\RequirePackage{adjustbox}
+\RequirePackage{fvextra}
+\RequirePackage[most]{tcolorbox}
+\RequirePackage{tikz}
+\usetikzlibrary{calc,fadings}
+\RequirePackage{etoolbox}
+
+\setlength{\abovedisplayskip}{6pt plus 2pt minus 2pt}
+\setlength{\belowdisplayskip}{6pt plus 2pt minus 2pt}
+\setlength{\abovedisplayshortskip}{2pt plus 2pt}
+\setlength{\belowdisplayshortskip}{4pt plus 2pt minus 1pt}
+\AtBeginDocument{%
+  \setlength{\abovedisplayskip}{6pt plus 2pt minus 2pt}%
+  \setlength{\belowdisplayskip}{6pt plus 2pt minus 2pt}}
+
+% Display maths is set through \fitmath, which scales the rare equation
+% that is wider than the text block down to fit it.
+\newsavebox{\fitmathbox}
+\newcommand{\fitmath}[1]{%
+  \sbox{\fitmathbox}{$\displaystyle #1$}%
+  \ifdim\wd\fitmathbox>\linewidth
+    \resizebox{\linewidth}{!}{\usebox{\fitmathbox}}%
+  \else
+    \usebox{\fitmathbox}%
+  \fi}
+% Display maths that has no paragraph of its own to sit in.
+\newenvironment{displaypara}
+  {\par\addvspace{4pt}\begingroup\centering}
+  {\par\endgroup\addvspace{4pt}}
+
+% ---------------------------------------------------------------------------
+% Headings
+% ---------------------------------------------------------------------------
+\setsecnumdepth{chapter}
+\maxsecnumdepth{chapter}
+\setcounter{tocdepth}{1}            % (\settocdepth would write into the .toc)
+
+\setsecheadstyle{\headingfont\fontsize{14.5}{17}\selectfont\color{accent}\raggedright}
+\setbeforesecskip{-1.5\onelineskip plus -0.5\onelineskip minus -0.2\onelineskip}
+\setaftersecskip{0.45\onelineskip plus 0.1\onelineskip}
+
+\setsubsecheadstyle{\headingfont\fontsize{11.5}{14}\selectfont\color{ink}\raggedright}
+\setbeforesubsecskip{-1.1\onelineskip plus -0.4\onelineskip minus -0.2\onelineskip}
+\setaftersubsecskip{0.3\onelineskip plus 0.1\onelineskip}
+
+\setsubsubsecheadstyle{\headingmediumfont\normalsize\itshape\color{ink}\raggedright}
+\setbeforesubsubsecskip{-0.9\onelineskip plus -0.3\onelineskip}
+\setaftersubsubsecskip{0.2\onelineskip}
+
+\setparaheadstyle{\headingmediumfont\normalsize\color{ink}}
+
+% --- chapter openers ------------------------------------------------------
+\newcommand*{\chapterlabelfont}{\headingfont\fontsize{8.5}{10}\selectfont
+  \addfontfeatures{LetterSpace=22}\color{accent}}
+\makechapterstyle{brave}{%
+  \setlength{\beforechapskip}{0pt}%
+  \setlength{\midchapskip}{0pt}%
+  \setlength{\afterchapskip}{2.4\onelineskip}%
+  \renewcommand*{\chapterheadstart}{\vspace*{0.55in}}%
+  \renewcommand*{\printchaptername}{}%
+  \renewcommand*{\chapternamenum}{}%
+  \renewcommand*{\printchapternum}{%
+    \begingroup\raggedright
+      {\chapterlabelfont\MakeUppercase{\@chapapp}}\par\nointerlineskip\vspace{2pt}%
+      {\headinglightfont\fontsize{66}{66}\selectfont\color{accent}\thechapter}\par
+    \endgroup}%
+  \renewcommand*{\afterchapternum}{%
+    \vspace{6pt}{\color{rulegray}\rule{\linewidth}{0.6pt}}\par\vspace{14pt}}%
+  \renewcommand*{\printchapternonum}{%
+    \vspace*{72pt}{\color{rulegray}\rule{\linewidth}{0.6pt}}\par\vspace{14pt}}%
+  \renewcommand*{\printchaptertitle}[1]{%
+    \begingroup\raggedright\headingfont\fontsize{25}{30}\selectfont\color{ink}##1\par\endgroup}%
+  \renewcommand*{\afterchaptertitle}{\par\nobreak\vskip\afterchapskip}%
+}
+\chapterstyle{brave}
+
+% --- part pages -------------------------------------------------------------
+\renewcommand*{\partnamefont}{\headingfont\fontsize{10}{12}\selectfont
+  \addfontfeatures{LetterSpace=25}\color{accent}}
+\renewcommand*{\partnumfont}{\partnamefont}
+\renewcommand*{\printpartname}{\partnamefont\MakeUppercase{\partname}}
+\renewcommand*{\printpartnum}{\partnumfont\thepart}
+\renewcommand*{\midpartskip}{\par\vspace{18pt}}
+\renewcommand*{\parttitlefont}{\headinglightfont\fontsize{46}{52}\selectfont\color{ink}}
+\newif\ifappendixpart
+\renewcommand*{\printparttitle}[1]{%
+  \ifappendixpart\phantomsection\addcontentsline{toc}{part}{#1}\fi
+  \parttitlefont #1\par
+  \vspace{22pt}{\color{accent}\rule{2.2em}{2pt}}\par
+  \ifappendixpart\else
+    \vspace{1.1in}%
+    \ifnum\value{part}=1 \yinyang{0.38in}\else\yinyang[180]{0.38in}\fi\par
+  \fi}
+\renewcommand*{\beforepartskip}{\vspace*{1.5in}}
+\newcommand*{\bravepart}[1]{\part{#1}}
+\newcommand*{\appendixpart}{\appendixparttrue\part*{Appendices}\appendixpartfalse}
+
+% A yin--yang mark for the part pages (Part I is "The Yang", Part II "The Yin").
+\newcommand*{\yinyang}[2][0]{%
+  \begin{tikzpicture}[rotate=#1, line width=0.7pt]
+    \def\yyr{#2}
+    \fill[accent] (0,0) circle (\yyr);
+    \fill[white] (0,\yyr) arc (90:270:\yyr) arc (-90:90:\yyr/2) arc (-90:-270:\yyr/2) -- cycle;
+    \fill[white] (0,\yyr/2) circle (\yyr/7);
+    \fill[accent] (0,-\yyr/2) circle (\yyr/7);
+    \draw[accent] (0,0) circle (\yyr);
+  \end{tikzpicture}}
+
+% ---------------------------------------------------------------------------
+% Running heads
+% ---------------------------------------------------------------------------
+\newcommand*{\headfont}{\smallcapsheadfont\fontsize{8}{10}\selectfont\color{inkgray}}
+\newcommand*{\folio}{\headingfont\fontsize{8.5}{10}\selectfont\color{ink}\thepage}
+
+\makepagestyle{brave}
+\makeevenhead{brave}{\folio\hspace{1.4em}\headfont\leftmark}{}{}
+\makeoddhead{brave}{}{}{\headfont\rightmark\hspace{1.4em}\folio}
+\makeevenfoot{brave}{}{}{}
+\makeoddfoot{brave}{}{}{}
+\nouppercaseheads
+\makepsmarks{brave}{%
+  \createmark{chapter}{both}{shownumber}{}{\hspace{0.7em}}%
+  \createmark{section}{right}{nonumber}{}{}%
+  \createplainmark{toc}{both}{\contentsname}%
+}
+\pagestyle{brave}
+
+% Chapter, part and other opening pages: folio centred at the foot.
+\makepagestyle{plain}
+\makeevenhead{plain}{}{}{}
+\makeoddhead{plain}{}{}{}
+\makeevenfoot{plain}{}{\folio}{}
+\makeoddfoot{plain}{}{\folio}{}
+\aliaspagestyle{chapter}{plain}
+\aliaspagestyle{part}{empty}
+\aliaspagestyle{afterpart}{empty}
+\aliaspagestyle{cleared}{empty}
+
+% ---------------------------------------------------------------------------
+% Table of contents
+% ---------------------------------------------------------------------------
+\renewcommand*{\contentsname}{Contents}
+\setlength{\cftbeforepartskip}{1.4\onelineskip}
+\setlength{\cftbeforechapterskip}{0.55\onelineskip}
+\renewcommand*{\cftpartfont}{\headingfont\color{accent}}
+\renewcommand*{\cftpartpagefont}{\headingfont\color{accent}}
+\renewcommand*{\cftpartpresnum}{\MakeUppercase{\partname}~}
+\renewcommand*{\cftpartaftersnum}{\hspace{0.6em}\textperiodcentered\hspace{0.6em}}
+\renewcommand*{\cftpartleader}{\hfill}
+\setlength{\cftpartnumwidth}{4.6em}
+\renewcommand*{\cftchapterfont}{\headingmediumfont}
+\renewcommand*{\cftchapterpagefont}{\headingmediumfont}
+\renewcommand*{\cftchapterleader}{\hfill}
+\renewcommand*{\cftchapterpresnum}{\color{accent}}
+\setlength{\cftchapternumwidth}{2em}
+\renewcommand*{\cftsectionfont}{\normalfont\small\color{inkgray}}
+\renewcommand*{\cftsectionpagefont}{\normalfont\small\color{inkgray}}
+\renewcommand*{\cftsectionleader}{\color{rulegray}\cftdotfill{\cftdotsep}}
+\renewcommand*{\cftdotsep}{2.5}
+\setlength{\cftsectionindent}{2em}
+\setlength{\cftsectionnumwidth}{0pt}
+\setpnumwidth{2.2em}
+\setrmarg{3.2em}
+% (The brief contents, at tocdepth 0, shares all of these settings.)
+
+% ---------------------------------------------------------------------------
+% Footnotes
+% ---------------------------------------------------------------------------
+\renewcommand*{\foottextfont}{\footnotesize}
+\setlength{\footmarkwidth}{1.3em}
+\setlength{\footmarksep}{0pt}
+\setlength{\footparindent}{0pt}
+\footmarkstyle{\color{accent}#1\hfill}
+\setlength{\footnotesep}{9pt}
+\renewcommand*{\footnoterule}{\kern-3pt{\color{rulegray}\hrule width 1.2in height 0.4pt}\kern 2.6pt}
+
+% ---------------------------------------------------------------------------
+% Code, outputs, inline code
+% ---------------------------------------------------------------------------
+\newcommand*{\codesize}{\fontsize{8.6}{10.6}\selectfont}
+\newcommand*{\code}[1]{\texttt{#1}}
+% A break inside an identifier is allowed but costs about as much as a hyphen.
+\newcommand*{\codebreak}{\penalty300\relax}
+
+% The syntax-highlighting macros come from pandoc (highlighting.tex); the
+% environments are defined here so that long lines wrap.
+% build.py wraps long lines itself (at commas, dots and brackets, never in
+% a string) and marks continuations with \codecont; fvextra's own wrapping
+% at spaces is the fallback and is drawn the same way.
+\newcommand*{\codebreaksymbol}{\textcolor{rulegray}{\ensuremath{\hookrightarrow}}}
+\newcommand*{\codecont}{\llap{\codebreaksymbol\hspace{2.5pt}}}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{%
+  commandchars=\\\{\}, fontsize=\codesize, breaklines, breakautoindent,
+  breakindent=18.1pt, breaksymbolleft=\codebreaksymbol, breaksymbolsepleft=2.5pt}
+
+\tcbset{codestyle/.style={enhanced, colback=codebg, colframe=codebg,
+  boxrule=0pt, arc=1.2pt, outer arc=1.2pt, left=7pt, right=5pt, top=3.5pt,
+  bottom=3.5pt, boxsep=0pt,
+  borderline west={1.6pt}{0pt}{accent!75},
+  before skip=7pt plus 2pt, after skip=5pt plus 2pt}}
+\newtcolorbox{codebox}{codestyle, breakable}
+\newtcolorbox{codeboxkeep}{codestyle}
+% filters/book.lua puts \keepnextcode before short listings.
+\newif\ifkeepnextcode
+\newcommand*{\keepnextcode}{\global\keepnextcodetrue}
+\newenvironment{Shaded}
+  {\ifkeepnextcode\global\keepnextcodefalse\def\shadedbox{codeboxkeep}%
+   \else\def\shadedbox{codebox}\fi
+   \begin{\shadedbox}}
+  {\end{\shadedbox}}
+
+% Code written in the text without a language: boxed, not highlighted.
+\DefineVerbatimEnvironment{plaincode}{Verbatim}{%
+  fontsize=\codesize, breaklines, breakanywhere, breaksymbolleft=\codebreaksymbol}
+
+% Plain-text cell output: a hairline on the left, no tint.
+\DefineVerbatimEnvironment{pyout}{Verbatim}{%
+  fontsize=\codesize, formatcom=\color{ink!85}, breaklines, breakanywhere,
+  breaksymbolleft=\codebreaksymbol, frame=leftline, framerule=0.9pt,
+  rulecolor=\color{outrule}, framesep=6.5pt, xleftmargin=1.2pt}
+\BeforeBeginEnvironment{pyout}{\par\addvspace{3pt}}
+\AfterEndEnvironment{pyout}{\par\addvspace{6pt}}
+
+% ---------------------------------------------------------------------------
+% Tables
+% ---------------------------------------------------------------------------
+% Data frames and statsmodels tables (generated by build.py).
+\newcommand*{\dfsize}[2]{\fontsize{#1}{#2}\selectfont}
+\newcommand*{\dfh}[1]{{\headingmediumfont #1}}
+\newcommand*{\dfi}[1]{{\color{inkgray}#1}}
+\newcommand*{\dfnote}[1]{\par\vspace{2pt}{\tablefont\footnotesize\color{inkgray}#1}}
+\newenvironment{dfblock}
+  {\par\addvspace{6pt}\begingroup\centering\tablefont
+   \setlength{\tabcolsep}{4.5pt}\renewcommand*{\arraystretch}{1.12}%
+   \setlength{\aboverulesep}{0.3ex}\setlength{\belowrulesep}{0.5ex}}
+  {\par\endgroup\addvspace{8pt}}
+\newcommand*{\dfsplitgap}{\par\vspace{8pt}}
+
+% Markdown (pipe) tables written by pandoc.
+\newenvironment{mdtable}
+  {\par\begingroup\tablefont\small\setlength{\tabcolsep}{8pt}%
+   \setlength{\LTpre}{4pt}\setlength{\LTpost}{6pt}}
+  {\par\endgroup}
+
+% ---------------------------------------------------------------------------
+% Images, quotes, section breaks, links
+% ---------------------------------------------------------------------------
+% \bookimage{width}{height}{file}: centred, never floating.  When the
+% picture would just miss the bottom of the page, shrink it (to no less
+% than 70%) rather than leave a hole.
+\newlength{\bookimgh}
+\newlength{\bookimgroom}
+\newcommand*{\bookimage}[3]{%
+  \par\addvspace{6pt}%
+  \begingroup
+    \setlength{\bookimgh}{#2}%
+    \ifdim\pagegoal<\maxdimen
+      \setlength{\bookimgroom}{\dimexpr\pagegoal-\pagetotal-\parskip-4pt\relax}%
+      \ifdim\bookimgroom<\bookimgh
+        \ifdim\bookimgroom>0.7\bookimgh \setlength{\bookimgh}{\bookimgroom}\fi
+      \fi
+    \fi
+    {\centering\includegraphics[width=#1,height=\bookimgh,keepaspectratio]{#3}\par}%
+  \endgroup
+  \addvspace{8pt}}
+
+\newtcolorbox{bravequote}{enhanced, breakable, blank, left=11pt, right=6pt,
+  top=1pt, bottom=1pt, borderline west={1.1pt}{0pt}{accent!55},
+  before skip=6pt, after skip=8pt, fontupper=\small\color{ink!90}}
+\renewenvironment{quote}{\begin{bravequote}\setlength{\parskip}{0.35\baselineskip}}{\end{bravequote}}
+
+% Notes and other asides (MyST admonitions in the notebooks).
+\newtcolorbox{bookaside}[1]{enhanced, breakable, colback=accent!3.5!white,
+  colframe=accent!3.5!white, boxrule=0pt, arc=1.5pt, outer arc=1.5pt,
+  left=11pt, right=11pt, top=8pt, bottom=8pt, boxsep=0pt,
+  borderline north={0.8pt}{0pt}{accent!70}, fontupper=\small,
+  before upper={{\chapterlabelfont\MakeUppercase{#1}}\par\vspace{4pt}%
+    \setlength{\parskip}{0.4\baselineskip}},
+  before skip=8pt plus 2pt, after skip=8pt plus 2pt}
+
+\newcommand*{\bookbreak}{\par\addvspace{6pt}%
+  {\centering\color{accent}\headingfont\small\textasteriskcentered\quad\textasteriskcentered\quad\textasteriskcentered\par}%
+  \addvspace{6pt}}
+
+% ---------------------------------------------------------------------------
+% Index (entries are marked by filters/book.lua; see filters/index_terms.lua)
+% ---------------------------------------------------------------------------
+\makeindex
+\renewcommand*{\indexname}{Index}
+\renewcommand*{\seename}{\textit{see}}
+\setlength{\columnsep}{2.2em}
+\newcommand*{\indexgroup}[1]{\par\addvspace{9pt}%
+  {\headingfont\small\color{accent}#1}\par\nopagebreak\vspace{1pt}}
+\AtBeginEnvironment{theindex}{\raggedright\hyphenpenalty=10000\exhyphenpenalty=10000}
+\renewcommand*{\preindexhook}{%
+  {\small\color{inkgray}Page ranges in the index mark the chapter devoted to
+  a topic; other entries point to where it is put to work elsewhere.\par}\vspace{10pt}}
+
+\RequirePackage{xurl}                  % URLs may break anywhere
+\urlstyle{sf}
+\newcommand*{\refurlfont}{\small}
+\newcommand*{\refurl}[1]{\hspace{0.4em}{\refurlfont\textcolor{inkgray}{\textperiodcentered}\hspace{0.4em}#1}}
+
+\RequirePackage{hyperref}
+\hypersetup{
+  colorlinks   = true,
+  linkcolor    = ink,
+  citecolor    = ink,
+  urlcolor     = accentdark,
+  bookmarksnumbered = true,
+  bookmarksopen     = true,
+  bookmarksopenlevel = 0,
+  pdfpagemode  = UseOutlines,
+  pdfdisplaydoctitle = true,
+  pdfstartview = Fit,
+}
+\RequirePackage{bookmark}
+
+\endinput
