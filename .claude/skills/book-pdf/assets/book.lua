@@ -335,6 +335,34 @@ local figures_filter = {
   end,
 }
 
+-- Columns of numbers are right-aligned when the source did not say
+-- (Word tables lose their alignment in pandoc; Markdown often omits it).
+local function align_numbers(el)
+  local n = #el.colspecs
+  local numeric, seen = {}, {}
+  for i = 1, n do numeric[i] = true end
+  for _, body in ipairs(el.bodies) do
+    for _, row in ipairs(body.body) do
+      local col = 1
+      for _, cell in ipairs(row.cells) do
+        local s = stringify(cell.contents):gsub('^%s+', ''):gsub('%s+$', '')
+        if s ~= '' and col <= n then
+          seen[col] = true
+          if not (s:match('^[%-+]?%d[%d.,]*%%?$') or s:match('^[%-+]?%.%d+%%?$')) then
+            numeric[col] = false
+          end
+        end
+        col = col + (cell.col_span or 1)
+      end
+    end
+  end
+  for i, cs in ipairs(el.colspecs) do
+    if numeric[i] and seen[i] and tostring(cs[1]) == 'AlignDefault' then
+      el.colspecs[i] = {pandoc.AlignRight, cs[2]}
+    end
+  end
+end
+
 local blocks_filter = {
   Para = function(el)
     local img = only_image(el.content)
@@ -369,6 +397,7 @@ local blocks_filter = {
 
   Table = function(el)
     fit_table(el)
+    align_numbers(el)
     -- a caption without an identifier is not numbered
     local pre = nil
     local cap = el.caption and el.caption.long

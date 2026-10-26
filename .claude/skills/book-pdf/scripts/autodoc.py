@@ -139,13 +139,13 @@ class Autodoc:
                                          kw_defaults=args.kw_defaults, kwarg=args.kwarg,
                                          defaults=args.defaults)
             try:
-                sig = ast.unparse(args)
+                sig = format_args(args)
             except Exception:
                 sig = "..."
             ret = ""
             if node.returns is not None:
                 try:
-                    ret = " -> " + ast.unparse(node.returns)
+                    ret = " -> " + ast.unparse(unquote(node.returns))
                 except Exception:
                     pass
             prefix = "async " if isinstance(node, ast.AsyncFunctionDef) else ""
@@ -252,8 +252,12 @@ class Autodoc:
         if not hit:
             return None
         path, mod, node, qual = hit
-        name = qual.split(".")[-1] if kind not in ("class", "exception") else qual.split(".")[-1]
         display = target.lstrip("~!").split("(")[0].strip()
+        if kind in ("function", "class", "exception", "data", "decorator", "object") and node is not None \
+                and "." not in display and mod:
+            # chronos.every(...), as Sphinx shows it: the path the docs use, not
+            # the module that happens to define the object
+            display = qual if qual.endswith("." + display) else f"{mod}.{display}"
         return self.render_node(node, display, None, kind in ("method",), opts)
 
     def render_node(self, node, name, doc, is_method, opts):
@@ -274,6 +278,48 @@ class Autodoc:
             return self.entry(sig, doc)
         return self.entry(name, doc)
 
+
+def unquote(ann):
+    """'Schedule' (a string annotation) -> Schedule, as Sphinx prints it."""
+    if isinstance(ann, ast.Constant) and isinstance(ann.value, str):
+        try:
+            return ast.parse(ann.value, mode="eval").body
+        except SyntaxError:
+            return ast.Name(id=ann.value)
+    return ann
+
+
+def format_args(args):
+    """An argument list as Sphinx prints it: 'count: int = 1', 'tz=None'."""
+    def one(a, default):
+        out = a.arg
+        if a.annotation is not None:
+            out += ": " + ast.unparse(unquote(a.annotation))
+        if default is not None:
+            out += (" = " if a.annotation is not None else "=") + ast.unparse(default)
+        return out
+    positional = args.posonlyargs + args.args
+    defaults = [None] * (len(positional) - len(args.defaults)) + list(args.defaults)
+    parts = []
+    for i, a in enumerate(positional):
+        parts.append(one(a, defaults[i]))
+        if args.posonlyargs and i == len(args.posonlyargs) - 1:
+            parts.append("/")
+    if args.vararg:
+        parts.append("*" + one(args.vararg, None))
+    elif args.kwonlyargs:
+        parts.append("*")
+    for a, d in zip(args.kwonlyargs, args.kw_defaults):
+        parts.append(one(a, d))
+    if args.kwarg:
+        parts.append("**" + one(args.kwarg, None))
+    return ", ".join(parts)
+
+
+# Section titles as Sphinx's napoleon prints them.
+SECTION_TITLES = {"Args": "Parameters", "Arguments": "Parameters", "Params": "Parameters",
+                  "Keyword Args": "Keyword Arguments", "Return": "Returns", "Yield": "Yields",
+                  "Raise": "Raises", "Warnings": "Warning", "Example": "Example", "Note": "Note"}
 
 SECTION = re.compile(r"^(Args|Arguments|Parameters|Params|Keyword Args|Keyword Arguments|"
                      r"Other Parameters|Returns|Return|Yields|Yield|Raises|Raise|Attributes|"
@@ -371,7 +417,7 @@ def napoleon(doc):
             re.fullmatch(r"-{3,}\s*", lines[i + 1].strip() or "x") else None
         if g or n:
             title = (g or n).group(1)
-            out += ["", f"**{title}**", ""]
+            out += ["", f"**{SECTION_TITLES.get(title, title)}**", ""]
             i += 2 if n else 1
             block = []
             while i < len(lines) and (not lines[i].strip() or lines[i].startswith((" ", "\t")) or n):

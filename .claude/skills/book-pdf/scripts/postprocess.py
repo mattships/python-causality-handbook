@@ -246,6 +246,97 @@ def convert_roles(blocks):
 
 
 # ---------------------------------------------------------------------------
+# typographic quotes
+# ---------------------------------------------------------------------------
+
+INLINE_TYPES = {"Str", "Space", "SoftBreak", "LineBreak", "Emph", "Strong", "Underline", "Strikeout",
+                "Superscript", "Subscript", "SmallCaps", "Quoted", "Cite", "Code", "Math", "RawInline",
+                "Link", "Image", "Note", "Span"}
+OPENERS = set("([{<\u2014\u2013-/\u00a0")
+
+
+def curl(s, prev=" "):
+    """Straight quotes -> typographic ones: opening after a space or an
+    opening bracket, closing (or an apostrophe) everywhere else."""
+    out = []
+    for i, ch in enumerate(s):
+        before = s[i - 1] if i else prev
+        opening = before.isspace() or before in OPENERS
+        if ch == '"':
+            out.append("\u201c" if opening else "\u201d")
+        elif ch == "'":
+            nxt = s[i + 1] if i + 1 < len(s) else ""
+            out.append("\u2018" if opening and nxt.isalpha() else "\u2019")
+        else:
+            out.append(ch)
+    return "".join(out)
+
+
+def smart_quotes(x):
+    """Curl the quotes of all prose (pandoc's readers for reST, HTML and
+    plain text leave them straight, and TeX would print " as a closing
+    quote).  Code, maths and raw markup are left alone."""
+    if isinstance(x, list):
+        if x and all(isinstance(i, dict) and i.get("t") in INLINE_TYPES for i in x):
+            prev = " "
+            for il in x:
+                t = il["t"]
+                if t == "Str":
+                    if "'" in il["c"] or '"' in il["c"]:
+                        il["c"] = curl(il["c"], prev)
+                    prev = il["c"][-1:] or prev
+                elif t in ("Space", "SoftBreak", "LineBreak"):
+                    prev = " "
+                else:
+                    if t not in ("Code", "Math", "RawInline"):
+                        smart_quotes(il.get("c"))
+                    prev = "x"
+        else:
+            for i in x:
+                smart_quotes(i)
+    elif isinstance(x, dict):
+        if x.get("t") in ("Code", "CodeBlock", "RawInline", "RawBlock", "Math"):
+            return
+        if "t" in x:
+            c = x.get("c")
+            if isinstance(c, (list, dict)):
+                smart_quotes(c)
+        else:
+            for v in x.values():
+                smart_quotes(v)
+    return x
+
+
+def drop_caption_echoes(blocks):
+    """Word documents keep a caption's paragraph next to the table or
+    figure that pandoc has given the caption to: drop the echo."""
+    def norm(t):
+        t = re.sub(r"^(table|figure|fig\.|image)\s*\d+[.:]?\s*", "", t.strip(), flags=re.I)
+        return re.sub(r"\s+", " ", t).strip(" .").lower()
+
+    def caption_of(b):
+        if b["t"] == "Table":
+            return A.stringify(b["c"][1][1])
+        if b["t"] == "Figure":
+            return A.stringify(b["c"][1][1])
+        if b["t"] in ("Para", "Plain"):
+            imgs = [i for i in b["c"] if i["t"] == "Image"]
+            if len(imgs) == 1 and len([i for i in b["c"] if i["t"] not in ("Space", "SoftBreak")]) == 1:
+                return A.stringify(imgs[0]["c"][1])
+        return ""
+
+    drop = set()
+    for i, b in enumerate(blocks):
+        cap = norm(caption_of(b))
+        if len(cap) < 8:
+            continue
+        for j in (i - 1, i + 1):
+            if 0 <= j < len(blocks) and blocks[j]["t"] in ("Para", "Plain") and norm(A.stringify(blocks[j])) == cap:
+                drop.add(j)
+    return [b for k, b in enumerate(blocks) if k not in drop]
+
+
+# ---------------------------------------------------------------------------
 # titles and headings
 # ---------------------------------------------------------------------------
 

@@ -67,11 +67,11 @@ FONT_SETS = {
              "STIXTwoMath-Regular.otf"),
     "lm": ("lmroman10-regular.otf", "lmsans10-regular.otf", "lmmono10-regular.otf", "latinmodern-math.otf"),
 }
-FONT_NAMES = {
-    "charter": "XCharter, Fira Sans and Inconsolata",
-    "libertinus": "Libertinus Serif, Libertinus Sans and Inconsolata",
-    "stix": "STIX Two, Source Sans Pro and Source Code Pro",
-    "lm": "Latin Modern",
+FONT_NAMES = {                       # text, headings, code
+    "charter": ("XCharter", "Fira Sans", "Inconsolata"),
+    "libertinus": ("Libertinus Serif", "Libertinus Sans", "Inconsolata"),
+    "stix": ("STIX Two", "Source Sans Pro", "Source Code Pro"),
+    "lm": ("Latin Modern Roman", "Latin Modern Sans", "Latin Modern Mono"),
 }
 LANG_LABEL = {"python": "Python", "javascript": "JavaScript", "typescript": "TypeScript",
               "cpp": "C++", "cs": "C#", "c": "C", "bash": "Shell", "zsh": "Shell", "yaml": "YAML",
@@ -96,7 +96,8 @@ TEX_ESC = {"\\": r"\textbackslash{}", "&": r"\&", "%": r"\%", "$": r"\$", "#": r
 
 
 def tex(s):
-    return "".join(TEX_ESC.get(c, c) for c in str(s))
+    """Text for LaTeX: escaped, with typographic quotes."""
+    return "".join(TEX_ESC.get(c, c) for c in P.curl(str(s)))
 
 
 def slugify(s, n=40):
@@ -800,6 +801,15 @@ class Build:
         d = self.find(e["code"]) if e["code"] not in (".", "") else self.root
         inc, exc = e.get("include") or ["*"], e.get("exclude") or []
         files = []
+        if e.get("files"):                   # an explicit list, in the order given
+            files = [(d / f).resolve() for f in e["files"]]
+            missing = [str(f) for f in files if not f.is_file()]
+            if missing:
+                sys.exit(f"book.yaml: {', '.join(missing)} not found")
+            title = e.get("title") or (self.relpath(d) if d != self.root else "Top-level files")
+            ch = Chapter(kind, title)
+            ch.units.append(Unit(self, d, "", "code", "chapter", title, files=files))
+            return ch
         if d.is_file():
             files = [d]
         else:
@@ -1055,6 +1065,8 @@ class Build:
         blocks = P.convert_divs(blocks, u)
         blocks = P.convert_raw_html(blocks, u)
         blocks = drop_badges(blocks)
+        blocks = P.drop_caption_echoes(blocks)
+        P.smart_quotes(blocks)
         if u.title is not None:
             title = u.title if isinstance(u.title, list) else A.text_inlines(str(u.title))
             if u.preset is None and u.fmt != "code":
@@ -1265,9 +1277,15 @@ class Build:
         if rev:
             typeset += f"\\\\\nSource revision \\texttt{{{tex(rev)}}}"
         fonts = cfg.get("fonts", "charter")
+        names = list(FONT_NAMES.get(fonts, FONT_NAMES["charter"]))
+        has_code = any(n.get("t") in ("CodeBlock", "Code") for c in chapters for u in c.units
+                       for n in A.iter_nodes(u.doc["blocks"]))
+        if not has_code:
+            names = names[:2]
+        faces = names[0] if len(set(names)) == 1 else ", ".join(names[:-1]) + " and " + names[-1]
         colophon = cfg.get("colophon") or (
-            f"This book was typeset with LuaLaTeX in {FONT_NAMES.get(fonts, fonts)},\\\\"
-            f"from {self.source_kind(chapters)} converted with pandoc.")
+            f"This book was typeset with LuaLaTeX in {faces},\\\\"
+            f"from the {self.source_kind(chapters)}, converted with pandoc.")
         cover_img = cfg.get("cover_image")
         if cover_img:
             src = (self.root / cover_img) if (self.root / cover_img).exists() else (self.base / cover_img)
@@ -1316,7 +1334,7 @@ class Build:
         named_parts = [p for p in self.parts if p["title"]]
         brief = (bool(named_parts) and n_main > 8) or n_main > 14
         L = [r"\pdfvariable minorversion=7",
-             rf"\documentclass[{self.trim[8]},twoside,openright,final]{{memoir}}",
+             rf"\documentclass[{self.trim[8]},twoside,{self.opening()},final]{{memoir}}",
              r"\input{bookconfig}", r"\usepackage{book}", r"\input{highlighting}", r"\input{macros}",
              r"\hypersetup{pdftitle={" + tex(cfg.get("title") or self.title) + "}, pdfauthor={" +
              tex(cfg.get("author") or "") + "}, pdfsubject={" + tex(cfg.get("subtitle") or "") + "}}",
@@ -1356,6 +1374,17 @@ class Build:
         (self.dir / "macros.tex").write_text(
             "% \\newcommand & co. found in the sources' maths\n" +
             "".join(macro_line(d) + "\n" for d in self.macros.values()))
+
+    def opening(self):
+        """openright, as books do; openany for short ones without parts
+        (a 20-page report would otherwise be a third blank pages)."""
+        mode = str(self.cfg.get("chapters_open", "auto")).lower()
+        if mode in ("right", "openright"):
+            return "openright"
+        if mode in ("any", "openany"):
+            return "openany"
+        parts = any(p["title"] for p in self.parts)
+        return "openright" if parts or getattr(self, "words", 0) >= 8000 else "openany"
 
     def compile(self):
         dirs = ([str(self.assets)] if self.assets != ASSETS else []) + [str(ASSETS)]
@@ -1397,6 +1426,7 @@ class Build:
                                      f"Appendix {c.number}" if c.kind == "appendix" else
                                      A.stringify(c.title_inlines)) for c in chapters}
         P.resolve_links([u for c in chapters for u in c.units], self)
+        self.words = sum(len(A.stringify(u.doc["blocks"]).split()) for c in chapters for u in c.units)
         if self.bibliography and self.cited:
             ref = self.bibliography_chapter()
             self.back.append(ref)

@@ -49,6 +49,7 @@ publisher standard). These knobs adapt it:
 | `language` | babel language name: `english`, `american`, `british`, `brazilian`, `ngerman`, `french`, `spanish`, … (hyphenation and "Chapter"/"Contents" words) | `english` |
 | `code_size` | listing size in pt | per trim |
 | `keep_lines` | listings shorter than this never split across pages | 14 |
+| `chapters_open` | `right` (on a recto, as books do), `any`, or `auto`: `any` for books under 8,000 words without parts | `auto` |
 | `fallback_fonts` | extra fonts for glyphs the book's fonts lack, e.g. `[NotoSansCJKsc-Regular]` for Chinese | DejaVu + colour emoji |
 
 Good accents: oxblood `9A1F26`, deep teal `0F5E63`, ink blue `1F4E79`,
@@ -96,6 +97,8 @@ Detail" when it has parts and more than eight chapters, or more than 14.
   recursive: false                    # true: include subfolders
   include: ["*.py"]                   # globs relative to the folder
   exclude: ["*_pb2.py"]
+- code: src/mypkg                     # or name the files, in reading order
+  files: [__init__.py, core.py, cli.py]
 ```
 
 Split files: headings that start "Part …" become parts, "Appendix …"
