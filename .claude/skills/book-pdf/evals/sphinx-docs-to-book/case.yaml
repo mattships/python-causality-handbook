@@ -1,0 +1,8 @@
+schema_version: "1.1"
+name: sphinx-docs-to-book
+expected_outcome: |
+  A typeset PDF book of the Chronos documentation: cover and title page, contents, chapters for the
+  quickstart, schedules and time zones guides, an API reference generated from the docstrings, the
+  changelog, code examples and notes set properly, maths typeset, no leftover reStructuredText markup.
+context:
+  scaffold_script: place-files.sh

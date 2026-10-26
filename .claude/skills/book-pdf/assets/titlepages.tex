@@ -1,0 +1,62 @@
+% Half-title, title page, copyright page, and the optional dedication and
+% epigraph.  The text comes from bookconfig.tex.
+
+% --- half-title (recto) ---------------------------------------------------
+\thispagestyle{empty}
+\vspace*{2.2in}
+\begingroup\raggedright
+{\headinglightfont\fontsize{24}{29}\selectfont\color{ink}\bookTitleLineA
+  \ifdefempty{\bookTitleLineB}{}{\\\bookTitleLineB}\par}
+\vspace{18pt}{\color{rulegray}\rule{1.6in}{0.5pt}}\par
+\endgroup
+\clearpage
+\thispagestyle{empty}\null
+\clearpage
+
+% --- title page (recto) ----------------------------------------------------
+\thispagestyle{empty}
+\vspace*{1.05in}
+\begingroup\raggedright
+{\headinglightfont\fontsize{\bookTitlePageSize}{\bookTitlePageLeading}\selectfont\color{ink}\bookTitleLineA\par}
+\ifdefempty{\bookTitleLineB}{}{%
+  \vspace{5pt}
+  {\headingfont\fontsize{27}{32}\selectfont\color{accent}\bookTitleLineB\par}}
+\vspace{26pt}{\color{rulegray}\rule{\linewidth}{0.5pt}}\par\vspace{22pt}
+\ifdefempty{\bookSubtitle}{}{%
+  {\itshape\fontsize{13.5}{18}\selectfont\color{inkgray}\bookSubtitle\par}}
+\vfill
+\ifdefempty{\bookAuthor}{}{%
+  {\headingmediumfont\fontsize{17}{21}\selectfont\color{ink}\bookAuthor\par}}
+\ifdefempty{\bookPublisher}{}{%
+  \vspace{10pt}{\headingfont\fontsize{8}{10}\selectfont\addfontfeatures{LetterSpace=25}%
+    \color{inkgray}\MakeUppercase{\bookPublisher}\par}}
+\vspace{0.35in}
+\endgroup
+\clearpage
+
+% --- copyright page (verso) ------------------------------------------------
+\thispagestyle{empty}
+\vspace*{\fill}
+\begingroup\raggedright\fontsize{8.5}{11.5}\selectfont\color{ink}
+\setlength{\parskip}{6pt}
+\bookCopyrightBlock
+
+\bookTypesetLine
+\par\endgroup
+\clearpage
+
+% --- dedication and epigraph (recto, optional) -----------------------------
+\ifdefempty{\bookDedication}{}{%
+  \thispagestyle{empty}
+  \vspace*{2.4in}
+  {\centering\itshape\fontsize{11}{15.5}\selectfont\color{ink}\bookDedication\par}
+  \cleardoublepage}
+\ifdefempty{\bookEpigraph}{}{%
+  \thispagestyle{empty}
+  \vspace*{2.4in}
+  \begingroup
+  \hfill\begin{minipage}{3.6in}\raggedright\color{ink}\fontsize{11}{15.5}\selectfont
+  \bookEpigraph
+  \end{minipage}
+  \endgroup
+  \clearpage}

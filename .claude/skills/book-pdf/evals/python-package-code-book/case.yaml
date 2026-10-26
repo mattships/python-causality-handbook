@@ -1,0 +1,7 @@
+schema_version: "1.1"
+name: python-package-code-book
+expected_outcome: |
+  A typeset PDF code book of textkit: title page, contents listing the files, the README as an
+  introduction, every module and the tests as numbered, highlighted listings, all fonts embedded.
+context:
+  scaffold_script: place-files.sh

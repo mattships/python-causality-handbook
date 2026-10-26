@@ -1,0 +1,8 @@
+schema_version: "1.1"
+name: word-report-to-book
+expected_outcome: |
+  A book-style PDF of the report: title page with title, subtitle and author, contents, the abstract
+  and the five chapters, the figure, the sensor table and the equation, the footnote and the
+  references, all fonts embedded.
+context:
+  scaffold_script: place-files.sh

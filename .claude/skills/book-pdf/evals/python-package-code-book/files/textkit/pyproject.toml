@@ -1,0 +1,9 @@
+[project]
+name = "textkit"
+version = "0.4.0"
+description = "Counting and comparing words in text"
+authors = [{name = "Jonas Berg"}]
+requires-python = ">=3.9"
+
+[project.scripts]
+textkit = "textkit.cli:main"

@@ -1,0 +1,51 @@
+% Front cover: full bleed on a dark ground.  With a cover image the picture
+% runs across the middle of the page, faded into the ground; without one
+% the cover is purely typographic.  The two cover pages are labelled C1 and
+% C2 in the PDF, as printers do.
+\renewcommand*{\thepage}{C\arabic{page}}
+\thispagestyle{empty}
+\begin{tikzpicture}[remember picture, overlay]
+  \coordinate (sw) at (current page.south west);
+  \fill[covernight] (sw) rectangle (current page.north east);
+
+  \ifdefempty{\bookCoverImage}{}{%
+    \node[inner sep=0pt] (art) at ($(sw)+(0.5\paperwidth,0.47\paperheight)$)
+      {\includegraphics[width=\paperwidth,height=0.44\paperheight,keepaspectratio]{\bookCoverImage}};
+    \fill[covernight, path fading=north] (art.south west) rectangle ($(art.south east)+(0,0.09\paperheight)$);
+    \fill[covernight, path fading=south] ($(art.north west)-(0,0.09\paperheight)$) rectangle (art.north east);
+  }
+
+  % Title block (\parbox, not TikZ's text width, which squeezes word spaces).
+  \node[anchor=north west, inner sep=0pt]
+    at ($(sw)+(0.1\paperwidth,0.925\paperheight)$) {\parbox[t]{0.8\paperwidth}{\raggedright
+      \ifdefempty{\bookAuthor}{}{%
+        {\headingfont\fontsize{9}{11}\selectfont\addfontfeatures{LetterSpace=28}%
+          \covertint{80}\MakeUppercase{\bookAuthor}}\par\vspace{0.42in}}%
+      {\headinglightfont\fontsize{\bookCoverTitleSize}{\bookCoverTitleLeading}\selectfont
+        \color{covercream}\bookTitleLineA\par}%
+      \ifdefempty{\bookTitleLineB}{}{%
+        \vspace{6pt}%
+        {\headingfont\fontsize{\bookCoverSecondSize}{\bookCoverSecondLeading}\selectfont
+          \color{coveraccent}\bookTitleLineB\par}}%
+    }};
+
+  % Subtitle, tagline and imprint, under a hairline as wide as the title block.
+  \node[anchor=south west, inner sep=0pt]
+    at ($(sw)+(0.1\paperwidth,0.125\paperheight)$) {\parbox[b]{0.8\paperwidth}{\raggedright
+      \hyphenpenalty=10000\exhyphenpenalty=10000
+      {\covertint{28}\rule{\linewidth}{0.5pt}}\par\vspace{16pt}%
+      \ifdefempty{\bookSubtitle}{}{%
+        {\itshape\fontsize{14}{19}\selectfont\color{covercream}\bookSubtitle\par}}%
+      \ifdefempty{\bookTagline}{}{%
+        \vspace{10pt}%
+        {\headinglightfont\fontsize{10.5}{14}\selectfont\covertint{70}\bookTagline\par}}%
+    }};
+  \ifdefempty{\bookImprint}{}{%
+    \node[anchor=south west, inner sep=0pt] at ($(sw)+(0.1\paperwidth,0.055\paperheight)$)
+      {\headingfont\fontsize{7.5}{9}\selectfont\addfontfeatures{LetterSpace=30}%
+        \covertint{55}\MakeUppercase{\bookImprint}};}
+\end{tikzpicture}
+\clearpage
+% Inside front cover.
+\thispagestyle{empty}\null
+\clearpage
