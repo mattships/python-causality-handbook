@@ -528,16 +528,59 @@ def inject_breaks(line):
     return "".join(out)
 
 
-def postprocess_latex(text):
+DEFINITION = re.compile(r"^(?P<indent>\s*)(?:(?:export\s+)?(?:async\s+)?(?:def|function|func|fn)\s+"
+                        r"(?:\([^)]*\)\s*)?(?P<func>[A-Za-z_]\w*)|(?:class|struct|enum|trait|interface)\s+"
+                        r"(?P<cls>[A-Za-z_]\w*))", re.M)
+
+
+def visible(line):
+    """The text a Highlighting line shows (macros and escapes resolved)."""
+    out = []
+    for u in UNIT.findall(line):
+        if u.endswith("Tok{") or u == "}":
+            continue
+        out.append(ESC_VIS.get(u, "?") if u.endswith("{}") else (u[1] if len(u) == 2 and u[0] == "\\" else u))
+    return "".join(out)
+
+
+def index_escape(s):
+    s = "".join(TEX_ESC.get(c, c) for c in s)
+    return re.sub(r'([!@|"])', r'"\1', s)
+
+
+def postprocess_latex(text, code_index=False):
+    """Break points in listings; in code books, an index mark at each line
+    that defines a function or class ("tokenize (textkit/tokenize.py)")."""
     text = re.sub(r"^\\def\\labelenumi\{\\arabic\{enumi\}\.\}\n", "", text, flags=re.M)
-    out, in_hl = [], False
+    out, in_hl, current, klass = [], False, "", None
     for line in text.split("\n"):
+        m = re.match(r"\\section\{(.*?)\}\\label", line)
+        if m:
+            current, klass = re.sub(r"\\(.)", r"\1", m.group(1)).replace("\\textbackslash{}", "\\"), None
         if line.startswith("\\begin{Highlighting}"):
             in_hl = True
         elif line.startswith("\\end{Highlighting}"):
             in_hl = False
         elif in_hl:
-            line = inject_breaks(line)
+            mark = ""
+            if code_index:
+                d = DEFINITION.match(visible(line))
+                if d:
+                    name = d.group("func") or d.group("cls")
+                    if d.group("cls") and not d.group("indent"):
+                        klass = name
+                    elif not d.group("indent"):
+                        klass = None
+                    if d.group("func") and d.group("indent") and klass:
+                        name = f"{klass}.{name}"
+                    in_tests = bool(re.search(r"(^|/)(tests?|testing)(/|$)|(^|/)test_[^/]*$|_test\.\w+$", current))
+                    if not in_tests and (not name.split(".")[-1].startswith(("_", "test_"))
+                                         or name.endswith("__init__")):
+                        # long names and paths may break after _ . and / in the index's narrow columns
+                        brk = lambda t: re.sub(r"(\\_|\.|/)", r"\1\\allowbreak{}", index_escape(t))
+                        where = f" ({brk(current)})" if current else ""
+                        mark = f"\\index{{{name.lower()}@\\texttt{{{brk(name)}}}{where}}}"
+            line = inject_breaks(line) + mark
         out.append(line)
     return "\n".join(out)
 
@@ -827,8 +870,10 @@ class Build:
                     continue
                 files.append(p)
         lead = ("__init__", "index", "main", "mod", "lib", "app")
+        order = import_order(d) if d.is_dir() else {}
         files.sort(key=lambda p: (len(p.relative_to(d).parts) if d.is_dir() else 0,
-                                  0 if p.stem in lead else 1, S.natural_key(p.name)))
+                                  0 if p.stem in lead else 1, order.get(p.stem, len(order)),
+                                  S.natural_key(p.name)))
         title = e.get("title") or (self.relpath(d) if d != self.root else "Top-level files")
         ch = Chapter(kind, title)
         ch.units.append(Unit(self, d, "", "code", "chapter", title, files=files))
@@ -1116,15 +1161,23 @@ class Build:
         spec = self.cfg.get("index", "auto")
         n_api = sum(1 for c in chapters for u in c.units for n in A.iter_nodes(u.doc["blocks"])
                     if n.get("t") == "Div" and "bookapi" in A.classes(n) and A.attrs(n).get("index"))
-        api = n_api >= 15 or (spec not in ("auto", None) and n_api > 0)
+        n_defs = sum(1 for c in chapters for u in c.units if u.fmt == "code"
+                     for n in A.iter_nodes(u.doc["blocks"]) if n.get("t") == "CodeBlock"
+                     for d in DEFINITION.finditer(n["c"][1])
+                     if not (d.group("func") or d.group("cls")).startswith(("_", "test_")))
+        self.code_index = n_defs >= 8
+        api = n_api >= 15 or self.code_index or (spec not in ("auto", None) and n_api > 0)
         if spec in (None, False, "none", "off"):
             return None, False, False
         import suggest_index
-        words = sum(len(A.stringify(u.doc["blocks"]).split()) for c in chapters for u in c.units)
-        if spec == "auto" and words < 12000 and not api:
-            self.warn(f"no index: the book is short ({words:,} words); set index: auto-always to force one")
-            return None, False, False
-        if spec in ("auto", "auto-always"):
+        words = sum(len(suggest_index.prose(u.doc["blocks"]).split()) for c in chapters for u in c.units)
+        if spec == "auto" and words < 12000:
+            if not api:
+                self.warn(f"no index: the book is short ({words:,} words of prose); "
+                          "set index: auto-always to force one")
+                return None, False, False
+            terms, see = [], {}             # too little prose for topics: API names only
+        elif spec in ("auto", "auto-always"):
             terms, see = suggest_index.auto_terms(chapters), {}
         else:
             data = yaml.safe_load((self.base / spec).read_text()) or {}
@@ -1166,7 +1219,7 @@ class Build:
         body, err = A.write(doc, "latex", args)
         if err:
             self.warn(f"pandoc ({ch.slug}): {err[:300]}")
-        body = postprocess_latex(body)
+        body = postprocess_latex(body, code_index=any(u.fmt == "code" for u in ch.units))
         secs = [A.stringify(b["c"][2]) for b in blocks if b["t"] == "Header" and b["c"][0] == 1]
         versions = sum(1 for t in secs if VERSIONISH.match(t))
         if len(secs) > 24 or (len(secs) > 8 and versions >= 0.6 * len(secs)):
@@ -1312,7 +1365,10 @@ class Build:
             "bookDedication": tex_lines(cfg.get("dedication") or ""),
             "bookEpigraph": tex_lines(cfg.get("epigraph") or ""), "bookColophon": colophon,
         }
-        if not has_ranges:
+        if getattr(self, "code_index", False) and not has_ranges:
+            defs["bookindexnote"] = ("Functions and classes are listed with the file that defines them; "
+                                     "the page is that of their definition.")
+        elif not has_ranges:
             defs["bookindexnote"] = ""
         lines = ["% Written by book.py from book.yaml."]
         for k, v in defs.items():
@@ -1454,6 +1510,27 @@ class Build:
 # ---------------------------------------------------------------------------
 # helpers
 # ---------------------------------------------------------------------------
+
+def import_order(folder):
+    """Modules of a Python package in the order its __init__ imports them
+    (the order in which a reader meets them), as {module: rank}."""
+    init = Path(folder) / "__init__.py"
+    if not init.is_file():
+        return {}
+    import ast
+    try:
+        tree = ast.parse(init.read_text(errors="replace"))
+    except SyntaxError:
+        return {}
+    order = {}
+    for node in tree.body:
+        if isinstance(node, ast.ImportFrom) and node.level >= 1 and node.module:
+            order.setdefault(node.module.split(".")[0], len(order))
+        elif isinstance(node, ast.ImportFrom) and node.level >= 1 and not node.module:
+            for a in node.names:
+                order.setdefault(a.name, len(order))
+    return order
+
 
 def inches(length):
     m = re.fullmatch(r"([\d.]+)(in|mm|cm|pt)", length)

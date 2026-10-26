@@ -142,11 +142,17 @@ two or more words becomes a caption.
 ## Source code (code books)
 
 - `{code: folder}` chapters list every source file of the folder (sub-
-  folders with `recursive: true`), `__init__`/`index`/`main` first, then
-  in natural order, each as a section "path" with "PYTHON · 1,204 LINES"
-  under it and a numbered, highlighted listing that wraps long lines at
-  commas, brackets, dots and operators (a hook arrow marks the
-  continuation).  Files over 400 KB, empty files, lock files and generated
+  folders with `recursive: true`), `__init__`/`index`/`main` first, then a
+  Python package's modules in the order its `__init__` imports them (the
+  order a reader meets them), then the rest in natural order; `files:`
+  sets the order by hand.  Each file is a section "path" with
+  "PYTHON · 1,204 LINES" under it and a numbered, highlighted listing that
+  wraps long lines at commas, brackets, dots and operators (a hook arrow
+  marks the continuation).
+- Functions and classes (Python `def`/`class`, JavaScript `function`, Go
+  `func`, Rust `fn`, `struct`, `enum`, …) are indexed at the line that
+  defines them, "tokenize (textkit/tokenize.py)", when the book defines 8
+  or more of them; private names and tests are left out.  Files over 400 KB, empty files, lock files and generated
   folders (node_modules, build, dist, venv, …) are skipped.
 - `init` on a code repository proposes: README as the Introduction, one
   chapter per package folder ("Source" part), test folders in a "Tests"

@@ -272,12 +272,35 @@ def curl(s, prev=" "):
     return "".join(out)
 
 
+UNITS = {"%", "‰", "°", "°C", "°F", "m", "cm", "mm", "km", "µm", "μm", "nm", "kg", "g", "mg", "µg",
+         "s", "ms", "µs", "ns", "min", "h", "Hz", "kHz", "MHz", "GHz", "kB", "KB", "MB", "GB", "TB", "KiB",
+         "MiB", "GiB", "TiB", "kW", "MW", "mV", "mA", "kV", "Ω", "kΩ", "J", "kJ", "kcal", "ml", "mL",
+         "px", "pt", "dpi", "ppi", "ppm", "dB", "°N", "°S", "°E", "°W", "km/h", "m/s", "mph"}
+
+
+def keep_units(inlines):
+    """'4.1 °C', '50 m', '20 %': no line break between a number and its unit."""
+    out, i = [], 0
+    while i < len(inlines):
+        il = inlines[i]
+        if (il["t"] == "Space" and out and out[-1]["t"] == "Str" and out[-1]["c"][-1:].isdigit()
+                and i + 1 < len(inlines) and inlines[i + 1]["t"] == "Str"
+                and re.sub(r"[.,;:!?)\]]+$", "", inlines[i + 1]["c"]) in UNITS):
+            out[-1] = A.Str(out[-1]["c"] + "\u00a0" + inlines[i + 1]["c"])
+            i += 2
+            continue
+        out.append(il)
+        i += 1
+    return out
+
+
 def smart_quotes(x):
     """Curl the quotes of all prose (pandoc's readers for reST, HTML and
     plain text leave them straight, and TeX would print " as a closing
     quote).  Code, maths and raw markup are left alone."""
     if isinstance(x, list):
         if x and all(isinstance(i, dict) and i.get("t") in INLINE_TYPES for i in x):
+            x[:] = keep_units(x)
             prev = " "
             for il in x:
                 t = il["t"]
