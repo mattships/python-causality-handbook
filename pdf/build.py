@@ -885,9 +885,14 @@ def highlighting_macros():
 
 
 def git_revision():
-    try:
-        return subprocess.run(["git", "-C", str(REPO), "rev-parse", "--short", "HEAD"],
+    """The last commit that changed the notebooks: the edition's content
+    revision, which commits to the build pipeline leave alone."""
+    def git(*args):
+        return subprocess.run(["git", "-C", str(REPO), *args],
                               capture_output=True, text=True, check=True).stdout.strip()
+    try:
+        rev = git("log", "-1", "--format=%h", "--", str(SRC)) or "unknown"
+        return rev + ("-dirty" if git("status", "--porcelain", "--", str(SRC)) else "")
     except Exception:
         return "unknown"
 
